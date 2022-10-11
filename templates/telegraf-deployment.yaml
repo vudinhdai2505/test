@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: {{- include "telegraf.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "telegraf.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      containers:
+      - name: {{ .Release.Name }}
+        image: "{{ .Values.image.repo }}:{{ .Values.image.tag}}"
+        imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+        resources: {{ toYaml .Values.resources | nindent 10 }}
+        env: {{ toYaml .Values.env | nindent 8 }}
+      imagePullSecrets: 
+      - name: {{ .Release.Name }}-key
+
+

@@ -1,0 +1,435 @@
+---
+# Source: telegraf/templates/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
+# Source: telegraf/templates/telegraf-pdb.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: telegraf
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: telegraf
+      app.kubernetes.io/instance: telegraf
+---
+# Source: telegraf/templates/kube-state-metric-service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-state-metrics
+    app.kubernetes.io/version: v1.8.0
+  name: kube-state-metrics
+  namespace: monitoring
+---
+# Source: telegraf/templates/node-expoter-serviceaccount.yaml
+# Source: prometheus/templates/node-exporter/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    component: "node-exporter"
+    app: prometheus
+    release: prometheus-community
+    chart: prometheus-15.0.1
+    heritage: Helm
+  name: prometheus-community-node-exporter
+  namespace: monitoring
+  annotations:
+    {}
+---
+# Source: telegraf/templates/telegraf-service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: telegraf
+  namespace: monitoring
+---
+# Source: telegraf/templates/telegraf-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: telegraf-key
+  namespace: monitoring
+data:
+  .dockerconfigjson: ewoJImF1dGhzIjogewoJCSJyZWdpc3RyeS5ma2UuZnB0Y2xvdWQuY29tIjogewoJCQkiYXV0aCI6ICJlSEJzWVhRdFpHVnRiMEJtY0hSamJHOTFaQzVqYjIwNmFXcHJXVTFQY1hST2REbEhkMkozVWxsRWVuSmplVTFDUWxOdVJuRnVURkU9IgoJCX0KCX0KfQo=
+type: kubernetes.io/dockerconfigjson
+---
+# Source: telegraf/templates/kube-state-metric-cluster-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-state-metrics
+    app.kubernetes.io/version: v1.8.0
+  name: kube-state-metrics
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - secrets
+  - nodes
+  - pods
+  - services
+  - resourcequotas
+  - replicationcontrollers
+  - limitranges
+  - persistentvolumeclaims
+  - persistentvolumes
+  - namespaces
+  - endpoints
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - extensions
+  resources:
+  - daemonsets
+  - deployments
+  - replicasets
+  - ingresses
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - statefulsets
+  - daemonsets
+  - deployments
+  - replicasets
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - batch
+  resources:
+  - cronjobs
+  - jobs
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - autoscaling
+  resources:
+  - horizontalpodautoscalers
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificatesigningrequests
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - storageclasses
+  - volumeattachments
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - mutatingwebhookconfigurations
+  - validatingwebhookconfigurations
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - networkpolicies
+  verbs:
+  - list
+  - watch
+---
+# Source: telegraf/templates/telegraf-cluster-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: telegraf-clusterrole
+rules:
+- apiGroups: [""]
+  resources:
+  - nodes
+  - nodes/proxy
+  - services
+  - endpoints
+  - pods
+  verbs: ["get", "list", "watch"]
+- apiGroups:
+  - extensions
+  resources:
+  - ingresses
+  verbs: ["get", "list", "watch"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+---
+# Source: telegraf/templates/kube-state-metric-cluster-role-binding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-state-metrics
+    app.kubernetes.io/version: v1.8.0
+  name: kube-state-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-state-metrics
+subjects:
+- kind: ServiceAccount
+  name: kube-state-metrics
+  namespace: monitoring
+---
+# Source: telegraf/templates/telegraf-clusterole-binding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: telegraf-clusterrolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: telegraf-clusterrole
+subjects:
+- kind: ServiceAccount
+  name: telegraf
+  namespace: monitoring
+---
+# Source: telegraf/templates/kube-state-metric-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-state-metrics
+    app.kubernetes.io/version: v1.8.0
+  name: kube-state-metrics
+  namespace: monitoring
+spec:
+  clusterIP: None
+  ports:
+  - name: http-metrics
+    port: 8080
+    targetPort: http-metrics
+  - name: telemetry
+    port: 8081
+    targetPort: telemetry
+  selector:
+    app.kubernetes.io/name: kube-state-metrics
+---
+# Source: telegraf/templates/node-exporter-svc.yaml
+# Source: prometheus/templates/node-exporter/svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    prometheus.io/scrape: "true"
+  labels:
+    component: "node-exporter"
+    app: prometheus
+    release: prometheus-community
+    chart: prometheus-15.0.1
+    heritage: Helm
+  name: prometheus-community-node-exporter
+  namespace: monitoring
+spec:
+  clusterIP: None
+  ports:
+    - name: metrics
+      port: 9100
+      protocol: TCP
+      targetPort: 9100
+  selector:
+    component: "node-exporter"
+    app: prometheus
+    release: prometheus-community
+  type: "ClusterIP"
+---
+# Source: telegraf/templates/node-exporter-daemonset.yaml
+# Source: prometheus/templates/node-exporter/daemonset.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    component: "node-exporter"
+    app: prometheus
+    release: prometheus-community
+    chart: prometheus-15.0.1
+    heritage: Helm
+  name: prometheus-community-node-exporter
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      component: "node-exporter"
+      app: prometheus
+      release: prometheus-community
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        component: "node-exporter"
+        app: prometheus
+        release: prometheus-community
+        chart: prometheus-15.0.1
+        heritage: Helm
+    spec:
+      serviceAccountName: prometheus-community-node-exporter
+      containers:
+        - name: prometheus-node-exporter
+          image: "quay.io/prometheus/node-exporter:v1.3.0"
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - --path.procfs=/host/proc
+            - --path.sysfs=/host/sys
+            - --path.rootfs=/host/root
+            - --web.listen-address=:9100
+          ports:
+            - name: metrics
+              containerPort: 9100
+              hostPort: 9100
+          resources:
+            {}
+          volumeMounts:
+            - name: proc
+              mountPath: /host/proc
+              readOnly:  true
+            - name: sys
+              mountPath: /host/sys
+              readOnly: true
+            - name: root
+              mountPath: /host/root
+              mountPropagation: HostToContainer
+              readOnly: true
+      hostNetwork: true
+      hostPID: true
+      securityContext:
+        fsGroup: 65534
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule        
+      volumes:
+        - name: proc
+          hostPath:
+            path: /proc
+        - name: sys
+          hostPath:
+            path: /sys
+        - name: root
+          hostPath:
+            path: /
+---
+# Source: telegraf/templates/kube-state-metric-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-state-metrics
+    app.kubernetes.io/version: v1.8.0
+  name: kube-state-metrics
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kube-state-metrics
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kube-state-metrics
+        app.kubernetes.io/version: v1.8.0
+    spec:
+      containers:
+      - image: quay.io/coreos/kube-state-metrics:v1.8.0
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        name: kube-state-metrics
+        ports:
+        - containerPort: 8080
+          name: http-metrics
+        - containerPort: 8081
+          name: telemetry
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8081
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+      nodeSelector:
+        kubernetes.io/os: linux
+      serviceAccountName: kube-state-metrics
+---
+# Source: telegraf/templates/telegraf-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telegraf
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: telegraf
+      app.kubernetes.io/instance: telegraf
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: telegraf
+        app.kubernetes.io/instance: telegraf
+    spec:
+      serviceAccountName: telegraf
+      containers:
+      - name: telegraf
+        image: "registry.fke.fptcloud.com/a6762c5a-56d1-4285-b4bc-b61177a171e1/telegraf:v1"
+        imagePullPolicy: "Always"
+        resources: 
+          {}
+        env: 
+        - name: CLUSTER_NAME
+          value: FKE
+        - name: PROMETHEUS_URL
+          value: http://10.0.0.13:31365
+        - name: USER_NAME
+          value: ""
+        - name: PASSWORD
+          value: ""
+      imagePullSecrets: 
+      - name: telegraf-key
