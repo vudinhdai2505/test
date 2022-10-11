@@ -18,7 +18,5 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
         resources: {{ toYaml .Values.resources | nindent 10 }}
         env: {{ toYaml .Values.env | nindent 8 }}
-      imagePullSecrets: 
-      - name: {{ .Release.Name }}-key
 
 

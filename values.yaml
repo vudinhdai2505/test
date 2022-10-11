@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
-  repo: "registry.fke.fptcloud.com/a6762c5a-56d1-4285-b4bc-b61177a171e1/telegraf"
-  tag: "v1"
+  repo: "vudinhdai2505/telegraf"
+  tag: "v5"
   pullPolicy: Always
 namespace: monitoring
 
@@ -10,10 +10,6 @@ label:
   instance: telegraf
 
 serviceAccountName: telegraf
-imagePullSecrets:
-  - name: telegraf
-secret: telegraf
-dockerconfigjson: ewoJImF1dGhzIjogewoJCSJyZWdpc3RyeS5ma2UuZnB0Y2xvdWQuY29tIjogewoJCQkiYXV0aCI6ICJlSEJzWVhRdFpHVnRiMEJtY0hSamJHOTFaQzVqYjIwNmFXcHJXVTFQY1hST2REbEhkMkozVWxsRWVuSmplVTFDUWxOdVJuRnVURkU9IgoJCX0KCX0KfQo=
 
 resources: {}
 env:
